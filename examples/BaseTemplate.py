@@ -2,7 +2,7 @@
 #
 # Author: GizMoCuz
 #
-""" 
+"""
 <plugin key="BasePlug" name="Basic Python Plugin Example" author="gizmocuz" version="1.0.0" wikilink="http://www.domoticz.com/wiki/plugins/plugin.html" externallink="https://www.google.com/">
     <description>
         <h2>Plugin Title</h2><br/>

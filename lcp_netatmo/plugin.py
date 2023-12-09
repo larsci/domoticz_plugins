@@ -347,6 +347,7 @@ class BasePlugin:
                         "access_token" : authToken,
                         "home_id": '5b8a9318ae476387748c3ae4'
                         }
+                # Needs scopes read_station and read_thermostat on creating a 'Refresh Token' (https://dev.netatmo.com/apps/6335f18995137a5d5d087461?code=3e099601fc31133dbd34d3f4244f6738)
                 resp_homestatusdata = postRequest(_GETHOMESTATUS_REQ, postParams)
                 if resp_homestatusdata is None: 
                     Domoticz.Error("*** Failed _GETHOMESTATUS_REQ (1)")
@@ -412,7 +413,16 @@ class BasePlugin:
                 try:
                     statusBoiler = 'Unknown'
                     Domoticz.Debug("=== RESP _GETHOMESTATUS_REQ ===================================================================")
-                    homeStatusRoom = resp_homestatusdata['body']['home']['rooms'][0]
+                    roomDataFound = True
+                    try:
+                        homeStatusRoom = resp_homestatusdata['body']['home']['rooms'][0]
+                    except BaseException as err:
+                        Domoticz.Error('*** Netatmo no room data found!')
+                        Domoticz.Error(err)
+                        Domoticz.Error(resp_homestatusdata)
+                        roomDataFound = False
+                        # foundError =  True
+
                     homeStatus = resp_homestatusdata['body']['home']['modules']
 
                     # Hoofdmodule
@@ -434,17 +444,18 @@ class BasePlugin:
                     Domoticz.Debug(homeStatus)
                     Domoticz.Debug(statusBoiler)
 
-                    thermSetpoint = homeStatusRoom['therm_setpoint_temperature']
-                    thermTemp = homeStatusRoom['therm_measured_temperature']
-                    thermSetpointMode = homeStatusRoom['therm_setpoint_mode']
+                    if roomDataFound:
+                        thermSetpoint = homeStatusRoom['therm_setpoint_temperature']
+                        thermTemp = homeStatusRoom['therm_measured_temperature']
+                        thermSetpointMode = homeStatusRoom['therm_setpoint_mode']
 
-                    Devices[Unit.THERM_SETP].Update(nValue=0, sValue=str(thermSetpoint), TimedOut=0)
-                    Devices[Unit.THERM_TEMP].Update(nValue=0, sValue=str(thermTemp), TimedOut=0)
-                    Devices[Unit.THERM_SETP_MODE].Update(nValue=0, sValue=str(thermSetpointMode), TimedOut=0)
+                        Devices[Unit.THERM_SETP].Update(nValue=0, sValue=str(thermSetpoint), TimedOut=0)
+                        Devices[Unit.THERM_TEMP].Update(nValue=0, sValue=str(thermTemp), TimedOut=0)
+                        Devices[Unit.THERM_SETP_MODE].Update(nValue=0, sValue=str(thermSetpointMode), TimedOut=0)
                     
-                    ret= self.mqtt_client.publish("netatmo_plugin/therm_setpoint",str(thermSetpoint)) 
-                    ret= self.mqtt_client.publish("netatmo_plugin/therm_temp",str(thermTemp))
-                    ret= self.mqtt_client.publish("netatmo_plugin/therm_setpoint_mode",str(thermSetpointMode))
+                        ret= self.mqtt_client.publish("netatmo_plugin/therm_setpoint",str(thermSetpoint)) 
+                        ret= self.mqtt_client.publish("netatmo_plugin/therm_temp",str(thermTemp))
+                        ret= self.mqtt_client.publish("netatmo_plugin/therm_setpoint_mode",str(thermSetpointMode))
 
                     for index, item in enumerate(homeStatus):
                         Domoticz.Debug(item)
